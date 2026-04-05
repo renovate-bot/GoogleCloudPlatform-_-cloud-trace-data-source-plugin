@@ -1,4 +1,8 @@
 # Changelog
+## 1.3.3 (2026-04-05)
+* Add Project List Filter to restrict which projects appear in dropdowns using regex patterns
+* Fix race condition in variable query where default project was set via unawaited promise
+
 ## 1.3.2 (2026-03-18)
 * Fix project dropdown search failing with "contains global restriction" error
 * Return error responses as JSON so Grafana displays actual error messages instead of generic "Unexpected error"

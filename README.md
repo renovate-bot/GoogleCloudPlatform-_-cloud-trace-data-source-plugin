@@ -71,9 +71,27 @@ If you are using a non-default universe (e.g., a sovereign cloud), you can confi
 3. Select "Google Cloud Trace"
 4. Select the authentication type from the dropdown (JWT, GCE, Access Token, or OAuth Passthrough)
 5. Provide the required credentials for your chosen authentication method
-6. Click "Save & test" to test that traces can be queried from Cloud Trace.
+6. Optionally, configure the **Universe Domain** if you are using a non-default GCP environment
+7. Optionally, configure the **Project List Filter** to restrict which projects appear in the project dropdown (see [Project List Filter](#project-list-filter) below)
+8. Click "Save & test" to test that traces can be queried from Cloud Trace.
 
 ![image info](https://github.com/GoogleCloudPlatform/cloud-trace-data-source-plugin/blob/main/src/img/cloud_trace_config.png?raw=true)
+
+### Project List Filter
+
+If you have access to many GCP projects, you can restrict which projects appear in the project dropdown by configuring a **Project List Filter** in the data source settings.
+
+Enter project IDs or regex patterns in the text area, one per line. Only projects matching at least one pattern will appear in the dropdown. Leave the field empty to show all projects (the default behavior).
+
+Each line is treated as a [regular expression](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_expressions) anchored to the full project ID. For example:
+
+| Pattern | Matches |
+| --- | --- |
+| `my-project-123` | Only the exact project `my-project-123` |
+| `team-alpha-.*` | All projects starting with `team-alpha-` |
+| `prod-.*-trace` | Projects like `prod-us-trace`, `prod-eu-trace`, etc. |
+
+You can combine multiple patterns (one per line) to match the union of all patterns. If a pattern contains invalid regex syntax, it is treated as a literal string match.
 
 ## Usage
 

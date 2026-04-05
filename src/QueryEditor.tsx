@@ -64,7 +64,7 @@ export function CloudTraceQueryEditor({ datasource, query, range, onChange, onRu
 
   const loadProjects = useCallback((inputValue: string): Promise<Array<SelectableValue<string>>> => {
     const thisRequestId = ++requestIdRef.current;
-    return datasource.getProjects(inputValue || undefined).then(res => {
+    return datasource.getFilteredProjects(inputValue || undefined).then(res => {
       if (thisRequestId === requestIdRef.current) {
         setFetchError(undefined);
       }
@@ -85,21 +85,36 @@ export function CloudTraceQueryEditor({ datasource, query, range, onChange, onRu
   useEffect(() => {
     const needsQueryText = query.queryText == null && defaultQuery.queryText;
     const needsProjectId = !query.projectId;
+    const projectFailsFilter = Boolean(query.projectId &&
+      !query.projectId.startsWith('$') &&
+      datasource.filterProjects([query.projectId]).length === 0);
 
-    if (!needsQueryText && !needsProjectId) {
+    if (!needsQueryText && !needsProjectId && !projectFailsFilter) {
       return;
     }
 
-    if (needsProjectId) {
+    if (needsProjectId || projectFailsFilter) {
       datasource.getDefaultProject().then((project) => {
         const nextQuery = { ...query };
+        let hasChanges = false;
+
         if (needsQueryText) {
           nextQuery.queryText = defaultQuery.queryText;
+          hasChanges = true;
         }
-        if (project) {
+
+        if (needsProjectId && project && datasource.filterProjects([project]).length > 0) {
           nextQuery.projectId = project;
+          hasChanges = true;
+        } else if (projectFailsFilter) {
+          // Explicit fallback: clear project ID if it doesn't pass the filter
+          nextQuery.projectId = '';
+          hasChanges = true;
         }
-        onChange(nextQuery);
+
+        if (hasChanges) {
+          onChange(nextQuery);
+        }
       });
     } else if (needsQueryText) {
       onChange({ ...query, queryText: defaultQuery.queryText });

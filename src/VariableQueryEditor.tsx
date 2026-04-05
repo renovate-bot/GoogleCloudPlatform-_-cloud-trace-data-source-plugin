@@ -42,8 +42,11 @@ export class CloudTraceVariableQueryEditor extends PureComponent<Props, Variable
 
     async componentDidMount() {
         await this.props.datasource.ensureGCEDefaultProject();
-        const projectId = this.props.query.projectId || (await this.props.datasource.getDefaultProject());
-        const projects = (await this.props.datasource.getProjects());
+        let projectId = this.props.query.projectId || (await this.props.datasource.getDefaultProject());
+        if (projectId && this.props.datasource.filterProjects([projectId]).length === 0) {
+            projectId = '';
+        }
+        const projects = (await this.props.datasource.getFilteredProjects());
       
         const state: any = {
             projects,

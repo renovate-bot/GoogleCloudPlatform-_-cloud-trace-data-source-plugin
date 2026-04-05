@@ -25,6 +25,7 @@ import { CloudTraceVariableSupport } from './variables';
 export class DataSource extends DataSourceWithBackend<Query, CloudTraceOptions> {
   authenticationType: string;
   annotations = {};
+  private filterRegexes: RegExp[] | null = null;
 
   constructor(
     private instanceSettings: DataSourceInstanceSettings<CloudTraceOptions>,
@@ -123,6 +124,48 @@ export class DataSource extends DataSourceWithBackend<Query, CloudTraceOptions> 
       return this.defaultProjectsCache;
     }
     return this.getResource('projects', { query });
+  }
+
+  /**
+   * Filter a list of project IDs against the configured project list filter patterns.
+   * Each non-empty line in `projectListFilter` is treated as a regex pattern
+   * anchored to the full project ID (^pattern$).
+   * If no patterns are configured, all projects pass through unchanged.
+   */
+  filterProjects(projects: string[]): string[] {
+    if (this.filterRegexes === null) {
+      const raw = this.instanceSettings.jsonData.projectListFilter;
+      if (!raw || !raw.trim()) {
+        this.filterRegexes = [];
+      } else {
+        this.filterRegexes = raw
+          .split('\n')
+          .map((line: string) => line.trim())
+          .filter((line: string) => line.length > 0)
+          .map((p: string) => {
+            try {
+              return new RegExp(`^(?:${p})$`);
+            } catch {
+              // If invalid regex, escape special chars and treat as literal match
+              return new RegExp(`^(?:${p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})$`);
+            }
+          });
+      }
+    }
+
+    if (this.filterRegexes.length === 0) {
+      return projects;
+    }
+    const regexes = this.filterRegexes;
+    return projects.filter((proj: string) => regexes.some((r: RegExp) => r.test(proj)));
+  }
+
+  /**
+   * Get projects from the API and apply the configured project list filter.
+   */
+  async getFilteredProjects(query?: string): Promise<string[]> {
+    const projects = await this.getProjects(query);
+    return this.filterProjects(projects);
   }
 
   applyTemplateVariables(query: Query, scopedVars: ScopedVars): Query {

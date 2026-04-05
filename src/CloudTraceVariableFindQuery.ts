@@ -24,7 +24,7 @@ export default class CloudTraceVariableFindQuery {
     async execute(query: CloudTraceVariableQuery) {
         try {
             if (!query.projectId) {
-                this.datasource.getDefaultProject().then(r => query.projectId = r);
+                query.projectId = await this.datasource.getDefaultProject();
             }
             switch (query.selectedQueryType) {
                 case TraceVariables.Projects:
@@ -39,7 +39,7 @@ export default class CloudTraceVariableFindQuery {
     }
 
     async handleProjectsQuery() {
-        const projects = await this.datasource.getProjects();
+        const projects = await this.datasource.getFilteredProjects();
         return (projects).map((s) => ({
             text: s,
             value: s,
